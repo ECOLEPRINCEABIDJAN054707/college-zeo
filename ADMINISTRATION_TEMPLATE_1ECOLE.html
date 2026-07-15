@@ -130,6 +130,19 @@ tr:nth-child(even){background:#F8FAFC}
     </div>
 
     <div class="card">
+      <div class="section-titre">
+        <span>🧾 Historique des paiements (50 derniers)</span>
+        <button onclick="toggleHistoriqueGlobal()" id="btnToggleHisto" style="width:auto;padding:6px 14px;font-size:0.8em">Afficher</button>
+      </div>
+      <div class="tbl-wrap hidden" id="wrapHistoriqueGlobal">
+        <table>
+          <thead><tr><th>Date</th><th>Matricule</th><th>Nom</th><th>Classe</th><th>Montant</th><th>Source</th></tr></thead>
+          <tbody id="bodyHistoriqueGlobal"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="section-titre">📋 Listes par niveau</div>
       <select id="niveauSelect" onchange="afficherListeNiveau()"><option value="">— Choisir une classe —</option></select>
       <div class="tbl-wrap">
@@ -242,6 +255,36 @@ async function chargerEspaceDirection(){
   renderResultats(TOUS_ELEVES);
   remplirNiveauSelect();
   chargerClassesInscription();
+}
+
+let HISTORIQUE_GLOBAL_CHARGE = false;
+async function toggleHistoriqueGlobal(){
+  const wrap = document.getElementById('wrapHistoriqueGlobal');
+  const btn = document.getElementById('btnToggleHisto');
+  if(wrap.classList.contains('hidden')){
+    if(!HISTORIQUE_GLOBAL_CHARGE){
+      btn.textContent = 'Chargement...';
+      try{
+        const url = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/HISTORIQUE_MAJ?key='+CONFIG.API_KEY+'&valueRenderOption=UNFORMATTED_VALUE';
+        const res = await fetch(url);
+        const data = await res.json();
+        const rows = (data.values || []).slice(1).reverse().slice(0,50); // 50 plus recents
+        const tbody = document.getElementById('bodyHistoriqueGlobal');
+        tbody.innerHTML = rows.length ? rows.map(r=>
+          '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td><strong>'+r[2]+'</strong></td><td>'+r[3]+'</td>'+
+          '<td style="color:#2E7D32;font-weight:700">+'+_pm(r[4]).toLocaleString('fr-FR')+' F</td><td>'+r[8]+'</td></tr>'
+        ).join('') : '<tr><td colspan="6" style="text-align:center;padding:14px;color:#999">Aucun paiement enregistré</td></tr>';
+        HISTORIQUE_GLOBAL_CHARGE = true;
+      }catch(e){
+        document.getElementById('bodyHistoriqueGlobal').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:14px;color:#C62828">Erreur de chargement</td></tr>';
+      }
+    }
+    wrap.classList.remove('hidden');
+    btn.textContent = 'Masquer';
+  } else {
+    wrap.classList.add('hidden');
+    btn.textContent = 'Afficher';
+  }
 }
 
 function remplirNiveauSelect(){
