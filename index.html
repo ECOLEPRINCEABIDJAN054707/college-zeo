@@ -32,6 +32,10 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .resultat-moy{font-size:2em;font-weight:700;color:#2E7D32}
 .resultat-decision{font-size:0.9em;font-weight:700;margin-top:4px}
 .contact-box{background:#FFF8E1;border-radius:10px;padding:14px;text-align:center;font-size:0.88em}
+.recu-item{display:flex;justify-content:space-between;align-items:center;background:#F1F8E9;border-left:4px solid #2E7D32;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:0.82em}
+.recu-item .montant{font-weight:700;color:#2E7D32}
+.recu-item .date{color:#666;font-size:0.85em}
+.recu-source{font-size:0.7em;background:#1F4E79;color:#fff;padding:2px 7px;border-radius:5px;margin-left:6px}
 .erreur{color:#C62828;font-size:0.85em;margin-bottom:10px;display:none}
 .hidden{display:none}
 .footer{text-align:center;padding:20px;font-size:0.75em;color:#999}
@@ -82,6 +86,11 @@ button:disabled{background:#aaa;cursor:not-allowed}
       <div style="background:#FFF3E0;border-radius:8px;padding:10px;margin-top:10px;font-size:0.78em;color:#E65100;text-align:center">
         ⚠️ Après paiement, envoyez votre reçu par WhatsApp au numéro de contact ci-dessous
       </div>
+    </div>
+
+    <div class="card" id="cardHistorique" style="display:none">
+      <div class="section-titre">🧾 Mes paiements — Reçus</div>
+      <div id="listeHistorique"></div>
     </div>
 
     <div class="card" id="cardResultat" style="display:none">
@@ -223,6 +232,38 @@ function afficherEspaceParent(eleve){
     decEl.textContent = eleve.decision || '—';
     decEl.style.color = eleve.decision==='ADMIS' ? '#2E7D32' : eleve.decision==='REDOUBLANT' ? '#E65100' : '#1F4E79';
   }
+
+  chargerHistoriquePaiements(eleve.matricule);
+}
+
+async function chargerHistoriquePaiements(matricule){
+  try{
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/HISTORIQUE_MAJ?key='+CONFIG.API_KEY+'&valueRenderOption=UNFORMATTED_VALUE';
+    const res = await fetch(url);
+    if(!res.ok) return; // onglet pas encore cree = pas de recu a montrer, pas grave
+    const data = await res.json();
+    const rows = data.values || [];
+    const matNorm = matricule.trim().toUpperCase();
+
+    const paiements = [];
+    for(let i=1;i<rows.length;i++){
+      const row = rows[i];
+      if(String(row[1]||'').trim().toUpperCase() === matNorm){
+        paiements.push({
+          date: String(row[0]||''), montant: _pm(row[4]), source: String(row[8]||''), reference: String(row[9]||'')
+        });
+      }
+    }
+    if(!paiements.length) return;
+
+    paiements.reverse(); // plus recent en premier
+    const div = document.getElementById('listeHistorique');
+    div.innerHTML = paiements.map(p=>
+      '<div class="recu-item"><div><div class="date">'+p.date+'</div><span class="recu-source">'+p.source+'</span></div>'+
+      '<div class="montant">+'+p.montant.toLocaleString('fr-FR')+' F</div></div>'
+    ).join('');
+    document.getElementById('cardHistorique').style.display = 'block';
+  }catch(e){ /* pas grave si ça echoue, le reste de la page fonctionne quand meme */ }
 }
 
 function deconnecter(){
