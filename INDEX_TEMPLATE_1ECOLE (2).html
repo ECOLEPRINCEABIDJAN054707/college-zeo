@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Collège Privé Guélanin Prince de Zéo — Espace Parents</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F5F7FA;color:#1A1A2E;min-height:100vh}
+.header{background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;padding:24px 20px;text-align:center}
+.header h1{font-size:1.3em;margin-bottom:4px}
+.header p{font-size:0.85em;opacity:0.9}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(31,78,121,0.08)}
+input{width:100%;padding:12px 14px;border:1.5px solid #E0E4EF;border-radius:10px;font-size:0.95em;margin-bottom:12px;font-family:inherit}
+input:focus{outline:none;border-color:#2E75B6}
+button{width:100%;padding:13px;background:#1F4E79;color:#fff;border:none;border-radius:10px;font-size:0.95em;font-weight:600;cursor:pointer}
+button:hover{background:#173a5c}
+button:disabled{background:#aaa;cursor:not-allowed}
+.eleve-nom{font-size:1.15em;font-weight:700;color:#1F4E79}
+.eleve-classe{font-size:0.85em;color:#666;margin-top:2px}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:0.75em;font-weight:700;margin-top:8px}
+.badge-solde{background:#E8F5E9;color:#2E7D32}
+.badge-partiel{background:#FFF3E0;color:#E65100}
+.badge-impaye{background:#FFEBEE;color:#C62828}
+.montant-solde{font-size:1.8em;font-weight:700;color:#C62828;text-align:center;margin:8px 0}
+.montant-solde.ok{color:#2E7D32}
+.section-titre{font-size:0.95em;font-weight:700;color:#1F4E79;margin-bottom:10px;border-bottom:2px solid #1F4E79;padding-bottom:6px}
+.paiement-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;font-size:0.85em}
+.paiement-step span.num{background:#1F4E79;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75em;font-weight:700;flex-shrink:0}
+.resultat-box{background:#F1F8E9;border-radius:10px;padding:14px;text-align:center;margin-bottom:8px}
+.resultat-moy{font-size:2em;font-weight:700;color:#2E7D32}
+.resultat-decision{font-size:0.9em;font-weight:700;margin-top:4px}
+.contact-box{background:#FFF8E1;border-radius:10px;padding:14px;text-align:center;font-size:0.88em}
+.erreur{color:#C62828;font-size:0.85em;margin-bottom:10px;display:none}
+.hidden{display:none}
+.footer{text-align:center;padding:20px;font-size:0.75em;color:#999}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎓 Collège Privé Guélanin Prince de Zéo</h1>
+  <p>Espace Parents — Suivi Scolaire</p>
+</div>
+
+<div class="container">
+
+  <!-- ÉCRAN DE CONNEXION -->
+  <div id="ecranConnexion" class="card">
+    <div class="section-titre">Connexion</div>
+    <div id="erreurConnexion" class="erreur"></div>
+    <input type="text" id="matriculeInput" placeholder="Matricule de l'élève" autocomplete="off">
+    <input type="tel" id="telephoneInput" placeholder="Numéro de téléphone (parent)" autocomplete="off">
+    <button onclick="connecter()" id="btnConnecter">Se connecter →</button>
+  </div>
+
+  <!-- ESPACE PARENT (masqué au départ) -->
+  <div id="espaceParent" class="hidden">
+
+    <div class="card" style="text-align:center">
+      <div class="eleve-nom" id="eleveNom">—</div>
+      <div class="eleve-classe" id="eleveClasse">—</div>
+      <div id="badgeStatut"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">💰 Scolarité</div>
+      <div style="font-size:0.85em;color:#666;text-align:center">Montant dû : <strong id="montantDu">—</strong> F CFA</div>
+      <div style="font-size:0.85em;color:#666;text-align:center;margin-bottom:6px">Déjà versé : <strong id="montantVerse">—</strong> F CFA</div>
+      <div class="montant-solde" id="montantSolde">—</div>
+      <div style="text-align:center;font-size:0.8em;color:#666" id="soldeLabel">Solde restant à payer</div>
+    </div>
+
+    <div class="card" id="cardPaiement">
+      <div class="section-titre">💳 Comment payer</div>
+      <div class="paiement-step"><span class="num">1</span><span>Ouvrez l'application Wave ou composez le code Orange Money</span></div>
+      <div class="paiement-step"><span class="num">2</span><span>Recherchez / sélectionnez : <strong>GUELANIN PRINCE DE ZEO</strong></span></div>
+      <div class="paiement-step"><span class="num">3</span><span>Indiquez le matricule : <strong id="matriculeAffiche">—</strong></span></div>
+      <div class="paiement-step"><span class="num">4</span><span>Entrez le montant que vous pouvez payer</span></div>
+      <div class="paiement-step"><span class="num">5</span><span>Confirmez avec votre code PIN</span></div>
+      <div style="background:#FFF3E0;border-radius:8px;padding:10px;margin-top:10px;font-size:0.78em;color:#E65100;text-align:center">
+        ⚠️ Après paiement, envoyez votre reçu par WhatsApp au numéro de contact ci-dessous
+      </div>
+    </div>
+
+    <div class="card" id="cardResultat" style="display:none">
+      <div class="section-titre">🏆 Résultat de l'année</div>
+      <div class="resultat-box">
+        <div class="resultat-moy" id="moyAnnuelle">—</div>
+        <div style="font-size:0.75em;color:#666">Moyenne annuelle</div>
+        <div class="resultat-decision" id="decisionAffichee">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="contact-box">
+        📞 <strong>Contact école</strong><br>
+        <span style="font-size:1.1em;font-weight:700">0757227056</span><br>
+        Collège Privé Guélanin Prince de Zéo
+      </div>
+    </div>
+
+    <button onclick="deconnecter()" style="background:#888">Se déconnecter</button>
+  </div>
+
+</div>
+
+<div class="footer">Collège Privé Guélanin Prince de Zéo — Espace Parents<br>Propulsé par Princes Smart School</div>
+
+<script>
+// ============================================================
+// CONFIGURATION — Collège Privé Guélanin Prince de Zéo
+// ============================================================
+const CONFIG = {
+  SHEETS_ID: '1tGjTGhmcQ0I9Vb5_eFGUTIzcsUk_giDL8iMu7J5Oh2o',
+  API_KEY: 'AIzaSyBaDldTi4GWHL3RpnppDKb7dRmaFNd_WSA' // même clé publique que le réseau (lecture seule Sheets API)
+};
+
+function _pm(v){ return parseFloat(String(v||"").replace(/\s/g,"").replace(",",".")) || 0; }
+
+async function connecter(){
+  const matricule = document.getElementById('matriculeInput').value.trim();
+  const telephone = document.getElementById('telephoneInput').value.trim().replace(/\s/g,'');
+  const erreurDiv = document.getElementById('erreurConnexion');
+  const btn = document.getElementById('btnConnecter');
+  erreurDiv.style.display = 'none';
+
+  if(!matricule || !telephone){
+    erreurDiv.textContent = 'Merci de remplir le matricule et le téléphone.';
+    erreurDiv.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Connexion...';
+
+  try{
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/SYNTHESE?key='+CONFIG.API_KEY+'&valueRenderOption=UNFORMATTED_VALUE';
+    const res = await fetch(url);
+    const data = await res.json();
+    const rows = data.values || [];
+
+    const matNorm = matricule.toUpperCase().replace(/\s/g,'');
+    const telNorm = telephone.replace(/\D/g,'');
+    let eleveTrouve = null;
+
+    for(let i=1; i<rows.length; i++){
+      const row = rows[i];
+      const matSheet = String(row[1]||'').trim().toUpperCase().replace(/\s/g,'');
+      if(matSheet !== matNorm) continue;
+
+      const tel1 = String(row[6]||'').replace(/\D/g,'');
+      const tel2 = String(row[7]||'').replace(/\D/g,'');
+      const tel3 = String(row[8]||'').replace(/\D/g,'');
+
+      if(telNorm===tel1 || telNorm===tel2 || telNorm===tel3 ||
+         (tel1 && tel1.slice(-8)===telNorm.slice(-8)) ||
+         (tel2 && tel2.slice(-8)===telNorm.slice(-8)) ||
+         (tel3 && tel3.slice(-8)===telNorm.slice(-8))){
+        eleveTrouve = {
+          classe: String(row[0]||'').trim(),
+          matricule: String(row[1]||'').trim(),
+          nom: String(row[2]||'').trim(),
+          du: _pm(row[3]),
+          verse: _pm(row[4]),
+          solde: _pm(row[5]),
+          statut: String(row[9]||'').trim().toUpperCase(),
+          decision: String(row[14]||'').trim(),
+          moyAnnuelle: row[15]!==undefined && row[15]!=='' ? _pm(row[15]) : null
+        };
+        break;
+      }
+    }
+
+    if(!eleveTrouve){
+      erreurDiv.textContent = 'Matricule ou numéro de téléphone incorrect. Vérifiez et réessayez.';
+      erreurDiv.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Se connecter →';
+      return;
+    }
+
+    sessionStorage.setItem('eleveConnecteZeo', JSON.stringify(eleveTrouve));
+    afficherEspaceParent(eleveTrouve);
+
+  }catch(e){
+    erreurDiv.textContent = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+    erreurDiv.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Se connecter →';
+  }
+}
+
+function afficherEspaceParent(eleve){
+  document.getElementById('ecranConnexion').classList.add('hidden');
+  document.getElementById('espaceParent').classList.remove('hidden');
+
+  document.getElementById('eleveNom').textContent = eleve.nom;
+  document.getElementById('eleveClasse').textContent = eleve.classe + ' — Collège Privé Guélanin Prince de Zéo';
+  document.getElementById('matriculeAffiche').textContent = eleve.matricule;
+  document.getElementById('montantDu').textContent = eleve.du.toLocaleString('fr-FR');
+  document.getElementById('montantVerse').textContent = eleve.verse.toLocaleString('fr-FR');
+  document.getElementById('montantSolde').textContent = eleve.solde.toLocaleString('fr-FR')+' F CFA';
+
+  const badgeDiv = document.getElementById('badgeStatut');
+  const soldeEl = document.getElementById('montantSolde');
+  const soldeLabelEl = document.getElementById('soldeLabel');
+
+  if(eleve.solde <= 0){
+    badgeDiv.innerHTML = '<span class="badge badge-solde">✅ Scolarité entièrement payée</span>';
+    soldeEl.classList.add('ok');
+    soldeLabelEl.textContent = 'Aucun solde restant';
+    document.getElementById('cardPaiement').style.display = 'none';
+  } else if(eleve.verse > 0){
+    badgeDiv.innerHTML = '<span class="badge badge-partiel">⚠️ Paiement partiel</span>';
+  } else {
+    badgeDiv.innerHTML = '<span class="badge badge-impaye">🔴 Non payé</span>';
+  }
+
+  // Résultat de l'année (si une décision/moyenne existe déjà)
+  if(eleve.decision || eleve.moyAnnuelle !== null){
+    document.getElementById('cardResultat').style.display = 'block';
+    document.getElementById('moyAnnuelle').textContent = eleve.moyAnnuelle!==null ? eleve.moyAnnuelle.toFixed(2) : '—';
+    const decEl = document.getElementById('decisionAffichee');
+    decEl.textContent = eleve.decision || '—';
+    decEl.style.color = eleve.decision==='ADMIS' ? '#2E7D32' : eleve.decision==='REDOUBLANT' ? '#E65100' : '#1F4E79';
+  }
+}
+
+function deconnecter(){
+  sessionStorage.removeItem('eleveConnecteZeo');
+  document.getElementById('espaceParent').classList.add('hidden');
+  document.getElementById('ecranConnexion').classList.remove('hidden');
+  document.getElementById('matriculeInput').value='';
+  document.getElementById('telephoneInput').value='';
+  document.getElementById('btnConnecter').disabled=false;
+  document.getElementById('btnConnecter').textContent='Se connecter →';
+}
+
+// Restaurer la session si déjà connecté
+window.addEventListener('load', function(){
+  const saved = sessionStorage.getItem('eleveConnecteZeo');
+  if(saved){
+    try{ afficherEspaceParent(JSON.parse(saved)); }catch(e){}
+  }
+});
+</script>
+</body>
+</html>
