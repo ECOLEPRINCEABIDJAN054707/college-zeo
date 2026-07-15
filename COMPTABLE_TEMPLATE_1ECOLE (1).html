@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collège Privé Guélanin Prince de Zéo — Comptable</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F5F7FA;color:#1A1A2E}
+.header{background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;padding:20px}
+.header h1{font-size:1.15em}
+.header p{font-size:0.8em;opacity:0.9;margin-top:2px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(31,78,121,0.08)}
+input,select{width:100%;padding:11px 13px;border:1.5px solid #E0E4EF;border-radius:9px;font-size:0.9em;margin-bottom:10px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#2E75B6}
+button{padding:11px 20px;background:#1F4E79;color:#fff;border:none;border-radius:9px;font-size:0.9em;font-weight:600;cursor:pointer}
+button:hover{background:#173a5c}
+.section-titre{font-size:0.95em;font-weight:700;color:#1F4E79;margin-bottom:12px;border-bottom:2px solid #1F4E79;padding-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:0.82em}
+th{background:#1F4E79;color:#fff;padding:8px 6px;text-align:left;position:sticky;top:0}
+td{padding:7px 6px;border-bottom:1px solid #EEE}
+tr:nth-child(even){background:#F8FAFC}
+.tbl-wrap{overflow-x:auto;max-height:500px;overflow-y:auto}
+.badge{padding:3px 9px;border-radius:14px;font-size:0.75em;font-weight:700}
+.badge-solde{background:#E8F5E9;color:#2E7D32}
+.badge-partiel{background:#FFF3E0;color:#E65100}
+.badge-impaye{background:#FFEBEE;color:#C62828}
+.badge-admis{background:#E8F5E9;color:#2E7D32}
+.badge-redoublant{background:#FFF3E0;color:#E65100}
+.badge-exclu{background:#FFEBEE;color:#C62828}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.stat-box{background:#F1F8E9;border-radius:10px;padding:12px;text-align:center}
+.stat-box .val{font-size:1.5em;font-weight:700;color:#1F4E79}
+.stat-box .lbl{font-size:0.72em;color:#666;margin-top:2px}
+.filtres{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filtres select,.filtres input{width:auto;flex:1;min-width:140px;margin-bottom:0}
+.hidden{display:none}
+.erreur{color:#C62828;font-size:0.85em;margin-bottom:10px}
+.tag-lecture{background:#FFF8E1;color:#B8860B;font-size:0.7em;padding:3px 8px;border-radius:6px;font-weight:600}
+.footer{text-align:center;padding:20px;font-size:0.75em;color:#999}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎓 Collège Privé Guélanin Prince de Zéo</h1>
+  <p>Espace Comptable</p>
+</div>
+
+<div class="container">
+
+  <!-- CONNEXION -->
+  <div id="ecranConnexion" class="card" style="max-width:360px;margin:40px auto">
+    <div class="section-titre">Connexion Comptable</div>
+    <div id="erreurConnexion" class="erreur hidden"></div>
+    <input type="text" id="codeInput" placeholder="Code d'accès directeur" autocomplete="off">
+    <button onclick="connecterDirecteur()" id="btnConnecter" style="width:100%">Se connecter →</button>
+  </div>
+
+  <!-- ESPACE DIRECTION -->
+  <div id="espaceDirection" class="hidden">
+
+    <div class="card">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-box"><div class="val" id="statNbEleves">—</div><div class="lbl">Élèves</div></div>
+        <div class="stat-box"><div class="val" id="statSolde">—</div><div class="lbl">Soldé</div></div>
+        <div class="stat-box"><div class="val" id="statPartiel">—</div><div class="lbl">Partiel</div></div>
+        <div class="stat-box"><div class="val" id="statImpaye">—</div><div class="lbl">Non payé</div></div>
+        <div class="stat-box"><div class="val" id="statTotalDu">—</div><div class="lbl">Total dû (F)</div></div>
+        <div class="stat-box"><div class="val" id="statTotalVerse">—</div><div class="lbl">Total versé (F)</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">🔍 Rechercher un élève</div>
+      <input type="text" id="rechercheInput" placeholder="Matricule ou nom..." oninput="filtrerRecherche()">
+      <div class="tbl-wrap">
+        <table id="tableRecherche">
+          <thead><tr><th>Classe</th><th>Matricule</th><th>Nom</th><th>Dû</th><th>Versé</th><th>Solde</th><th>Statut</th><th>Tél. 1</th></tr></thead>
+          <tbody id="bodyRecherche"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">💰 Enregistrer un paiement</div>
+      <div id="msgPaiement" style="font-size:0.82em;margin-bottom:8px"></div>
+      <input type="text" id="paieMatricule" placeholder="Matricule de l'élève">
+      <input type="text" id="paieMontant" placeholder="Montant reçu (F CFA)">
+      <select id="paieSource">
+        <option value="WAVE">Wave</option>
+        <option value="ORANGE">Orange Money</option>
+        <option value="ESPECES">Espèces</option>
+      </select>
+      <input type="text" id="paieReference" placeholder="Référence transaction (optionnel)">
+      <button onclick="enregistrerPaiementWeb()" id="btnPaiement" style="width:100%">Enregistrer le paiement</button>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">
+        <span>📊 Liste des impayés</span>
+        <button onclick="toggleImpayes()" id="btnToggleImpayes" style="width:auto;padding:6px 14px;font-size:0.8em">Afficher</button>
+      </div>
+      <div class="tbl-wrap hidden" id="wrapImpayes">
+        <table>
+          <thead><tr><th>Classe</th><th>Matricule</th><th>Nom</th><th>Solde restant</th><th>Tél.</th></tr></thead>
+          <tbody id="bodyImpayes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <button onclick="deconnecterComptable()" style="background:#888;width:100%">Se déconnecter</button>
+  </div>
+
+</div>
+
+<div class="footer">Collège Privé Guélanin Prince de Zéo — Espace Comptable<br>Propulsé par Princes Smart School</div>
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzhi3z_VAQezXoTNrkNUans2F8XeHBFhLr37iYZE7Wk6zRIsahowQobw6RMQskM1Oinw/exec';
+
+const CONFIG = {
+  SHEETS_ID: '1tGjTGhmcQ0I9Vb5_eFGUTIzcsUk_giDL8iMu7J5Oh2o',
+  API_KEY: 'AIzaSyBaDldTi4GWHL3RpnppDKb7dRmaFNd_WSA'
+};
+function _pm(v){ return parseFloat(String(v||"").replace(/\s/g,"").replace(",",".")) || 0; }
+
+let TOUS_ELEVES = [];
+
+async function connecterDirecteur(){
+  const code = document.getElementById('codeInput').value.trim();
+  const erreurDiv = document.getElementById('erreurConnexion');
+  const btn = document.getElementById('btnConnecter');
+  erreurDiv.classList.add('hidden');
+
+  if(!code){ erreurDiv.textContent='Entrez le code d\'accès.'; erreurDiv.classList.remove('hidden'); return; }
+
+  btn.disabled = true; btn.textContent = 'Vérification...';
+
+  try{
+    const urlConfig = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/CONFIG_ECOLE?key='+CONFIG.API_KEY;
+    const resConfig = await fetch(urlConfig);
+    const dataConfig = await resConfig.json();
+    const rowsConfig = dataConfig.values || [];
+    let codeValide = null;
+    rowsConfig.forEach(function(row){
+      if(String(row[0]||'').trim().toUpperCase()==='CODE_COMPTABLE') codeValide = String(row[1]||'').trim();
+    });
+
+    if(!codeValide || code.toUpperCase() !== codeValide.toUpperCase()){
+      erreurDiv.textContent = 'Code incorrect.';
+      erreurDiv.classList.remove('hidden');
+      btn.disabled=false; btn.textContent='Se connecter →';
+      return;
+    }
+
+    sessionStorage.setItem('comptableZeoConnecte','1');
+    await chargerEspaceDirection();
+
+  }catch(e){
+    erreurDiv.textContent = 'Erreur de connexion. Réessayez.';
+    erreurDiv.classList.remove('hidden');
+    btn.disabled=false; btn.textContent='Se connecter →';
+  }
+}
+
+async function chargerEspaceDirection(){
+  document.getElementById('ecranConnexion').classList.add('hidden');
+  document.getElementById('espaceDirection').classList.remove('hidden');
+
+  const url = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/SYNTHESE?key='+CONFIG.API_KEY+'&valueRenderOption=UNFORMATTED_VALUE';
+  const res = await fetch(url);
+  const data = await res.json();
+  const rows = data.values || [];
+
+  TOUS_ELEVES = [];
+  for(let i=1;i<rows.length;i++){
+    const row = rows[i];
+    if(!String(row[1]||'').trim()) continue;
+    TOUS_ELEVES.push({
+      classe: String(row[0]||'').trim(),
+      matricule: String(row[1]||'').trim(),
+      nom: String(row[2]||'').trim(),
+      du: _pm(row[3]), verse: _pm(row[4]), solde: _pm(row[5]),
+      tel1: String(row[6]||'').trim(),
+      statut: String(row[9]||'').trim().toUpperCase(),
+      decision: String(row[14]||'').trim().toUpperCase(),
+      moy: row[15]!==undefined && row[15]!=='' ? _pm(row[15]) : null,
+      classeSuivante: String(row[16]||'').trim()
+    });
+  }
+
+  calculerStats();
+  renderRecherche(TOUS_ELEVES);
+  // Sections Resultats/Inscription retirees pour l'espace Comptable
+}
+
+function appelJSONP(url, params, timeoutMs){
+  return new Promise(resolve=>{
+    const cbName='jp_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    const script=document.createElement('script');
+    const qs=new URLSearchParams(Object.assign({callback:cbName}, params));
+    window[cbName]=res=>{delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve(res);};
+    script.onerror=()=>{delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve({succes:false,message:'Erreur reseau'});};
+    script.src=url+'?'+qs.toString();
+    document.body.appendChild(script);
+    setTimeout(()=>{if(window[cbName]){delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve({succes:false,message:'Délai dépassé'});}},timeoutMs||10000);
+  });
+}
+
+async function enregistrerPaiementWeb(){
+  const msg = document.getElementById('msgPaiement');
+  const btn = document.getElementById('btnPaiement');
+  const matricule = document.getElementById('paieMatricule').value.trim();
+  const montant = document.getElementById('paieMontant').value.trim();
+  const source = document.getElementById('paieSource').value;
+  const reference = document.getElementById('paieReference').value.trim();
+
+  if(!matricule || !montant){
+    msg.style.color='#C62828'; msg.textContent='Merci de remplir au moins le matricule et le montant.';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Enregistrement...';
+  msg.textContent = '';
+
+  const result = await appelJSONP(APPS_SCRIPT_URL, {
+    action: 'enregistrerPaiementWeb', matricule, montant, source, reference
+  });
+
+  btn.disabled = false; btn.textContent = 'Enregistrer le paiement';
+
+  if(result && result.succes){
+    msg.style.color = '#2E7D32';
+    msg.textContent = '✅ ' + result.nom + ' — Versé : ' + Number(montant).toLocaleString('fr-FR') +
+      ' F | Solde restant : ' + result.solde.toLocaleString('fr-FR') + ' F (' + result.statut + ')';
+    document.getElementById('paieMatricule').value='';
+    document.getElementById('paieMontant').value='';
+    document.getElementById('paieReference').value='';
+    await chargerEspaceDirection();
+  } else {
+    msg.style.color = '#C62828';
+    msg.textContent = '❌ ' + (result && result.message || 'Erreur inconnue');
+  }
+}
+
+function toggleImpayes(){
+  const wrap = document.getElementById('wrapImpayes');
+  const btn = document.getElementById('btnToggleImpayes');
+  if(wrap.classList.contains('hidden')){
+    const impayes = TOUS_ELEVES.filter(e=>e.solde>0);
+    const tbody = document.getElementById('bodyImpayes');
+    tbody.innerHTML = impayes.length ? impayes.map(e=>
+      '<tr><td>'+e.classe+'</td><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td>'+
+      '<td style="color:#C62828;font-weight:700">'+e.solde.toLocaleString('fr-FR')+' F</td><td>'+e.tel1+'</td></tr>'
+    ).join('') : '<tr><td colspan="5" style="text-align:center;padding:14px;color:#999">Aucun impayé 🎉</td></tr>';
+    wrap.classList.remove('hidden');
+    btn.textContent = 'Masquer';
+  } else {
+    wrap.classList.add('hidden');
+    btn.textContent = 'Afficher';
+  }
+}
+
+async function chargerClassesInscription(){
+  const sel = document.getElementById('inscClasse');
+  if(!sel || sel.options.length > 1) return; // deja charge
+  const result = await appelJSONP(APPS_SCRIPT_URL, {action:'listerClasses'});
+  if(result && result.succes && result.classes){
+    result.classes.forEach(c=>{
+      const o = document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+    });
+  }
+}
+
+async function inscrireEleveWeb(){
+  const msg = document.getElementById('msgInscription');
+  const btn = document.getElementById('btnInscrire');
+  const classe = document.getElementById('inscClasse').value;
+  const matricule = document.getElementById('inscMatricule').value.trim();
+  const nom = document.getElementById('inscNom').value.trim();
+  const montantDu = document.getElementById('inscMontantDu').value.trim();
+  const tel1 = document.getElementById('inscTel1').value.trim();
+  const tel2 = document.getElementById('inscTel2').value.trim();
+  const tel3 = document.getElementById('inscTel3').value.trim();
+
+  if(!classe || !matricule || !nom){
+    msg.style.color='#C62828'; msg.textContent='Merci de remplir au moins la classe, le matricule et le nom.';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Inscription en cours...';
+  msg.textContent = '';
+
+  const result = await appelJSONP(APPS_SCRIPT_URL, {
+    action: 'inscrireNouvelEleveWeb', classe, matricule, nom, montantDu: montantDu||'0', tel1, tel2, tel3
+  });
+
+  btn.disabled = false; btn.textContent = "Inscrire l'élève";
+
+  if(result && result.succes){
+    msg.style.color = '#2E7D32';
+    msg.textContent = '✅ ' + result.message;
+    document.getElementById('inscClasse').value='';
+    document.getElementById('inscMatricule').value='';
+    document.getElementById('inscNom').value='';
+    document.getElementById('inscMontantDu').value='';
+    document.getElementById('inscTel1').value='';
+    document.getElementById('inscTel2').value='';
+    document.getElementById('inscTel3').value='';
+    // Recharger les donnees pour que le nouvel eleve apparaisse tout de suite
+    await chargerEspaceDirection();
+  } else {
+    msg.style.color = '#C62828';
+    msg.textContent = '❌ ' + (result && result.message || 'Erreur inconnue');
+  }
+}
+
+function calculerStats(){
+  document.getElementById('statNbEleves').textContent = TOUS_ELEVES.length;
+  document.getElementById('statSolde').textContent = TOUS_ELEVES.filter(e=>e.solde===0).length;
+  document.getElementById('statPartiel').textContent = TOUS_ELEVES.filter(e=>e.solde>0 && e.verse>0).length;
+  document.getElementById('statImpaye').textContent = TOUS_ELEVES.filter(e=>e.verse===0).length;
+  document.getElementById('statTotalDu').textContent = TOUS_ELEVES.reduce((s,e)=>s+e.du,0).toLocaleString('fr-FR');
+  document.getElementById('statTotalVerse').textContent = TOUS_ELEVES.reduce((s,e)=>s+e.verse,0).toLocaleString('fr-FR');
+}
+
+function badgeStatut(statut,solde,verse){
+  if(solde===0) return '<span class="badge badge-solde">SOLDÉ</span>';
+  if(verse>0) return '<span class="badge badge-partiel">PARTIEL</span>';
+  return '<span class="badge badge-impaye">IMPAYÉ</span>';
+}
+
+function renderRecherche(liste){
+  const tbody = document.getElementById('bodyRecherche');
+  if(!liste.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:14px;color:#999">Aucun résultat</td></tr>'; return; }
+  tbody.innerHTML = liste.slice(0,100).map(e=>
+    '<tr><td>'+e.classe+'</td><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td>'+
+    '<td>'+e.du.toLocaleString('fr-FR')+'</td><td>'+e.verse.toLocaleString('fr-FR')+'</td><td>'+e.solde.toLocaleString('fr-FR')+'</td>'+
+    '<td>'+badgeStatut(e.statut,e.solde,e.verse)+'</td><td>'+e.tel1+'</td></tr>'
+  ).join('');
+}
+
+function filtrerRecherche(){
+  const q = document.getElementById('rechercheInput').value.trim().toLowerCase();
+  if(!q){ renderRecherche(TOUS_ELEVES); return; }
+  const filtres = TOUS_ELEVES.filter(e=> e.matricule.toLowerCase().includes(q) || e.nom.toLowerCase().includes(q));
+  renderRecherche(filtres);
+}
+
+function remplirFiltreClasse(){
+  const sel = document.getElementById('filtreClasse');
+  const classes = [...new Set(TOUS_ELEVES.map(e=>e.classe))].sort();
+  classes.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+}
+
+function badgeDecision(dec){
+  if(dec==='ADMIS') return '<span class="badge badge-admis">ADMIS</span>';
+  if(dec==='REDOUBLANT') return '<span class="badge badge-redoublant">REDOUBLANT</span>';
+  if(dec==='EXCLU') return '<span class="badge badge-exclu">EXCLU</span>';
+  return dec ? '<span class="badge">'+dec+'</span>' : '<span style="color:#999">—</span>';
+}
+
+function renderResultats(liste){
+  const tbody = document.getElementById('bodyResultats');
+  const avecDecision = liste.filter(e=>e.decision || e.moy!==null);
+  if(!avecDecision.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:14px;color:#999">Aucun résultat disponible</td></tr>'; return; }
+  tbody.innerHTML = avecDecision.map(e=>
+    '<tr><td>'+e.classe+'</td><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td>'+
+    '<td style="font-weight:700">'+(e.moy!==null?e.moy.toFixed(2):'—')+'</td>'+
+    '<td>'+badgeDecision(e.decision)+'</td><td>'+(e.classeSuivante||'—')+'</td></tr>'
+  ).join('');
+}
+
+function filtrerResultats(){
+  const fc = document.getElementById('filtreClasse').value;
+  const fd = document.getElementById('filtreDecision').value;
+  const filtres = TOUS_ELEVES.filter(e=> (!fc||e.classe===fc) && (!fd||e.decision===fd) );
+  renderResultats(filtres);
+}
+
+function deconnecterComptable(){
+  sessionStorage.removeItem('comptableZeoConnecte');
+  document.getElementById('espaceDirection').classList.add('hidden');
+  document.getElementById('ecranConnexion').classList.remove('hidden');
+  document.getElementById('codeInput').value='';
+  document.getElementById('btnConnecter').disabled=false;
+  document.getElementById('btnConnecter').textContent='Se connecter →';
+}
+
+window.addEventListener('load', function(){
+  if(sessionStorage.getItem('comptableZeoConnecte')==='1'){
+    chargerEspaceDirection();
+  }
+});
+</script>
+</body>
+</html>
