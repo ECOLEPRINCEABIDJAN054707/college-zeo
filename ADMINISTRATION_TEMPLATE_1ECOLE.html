@@ -102,6 +102,19 @@ tr:nth-child(even){background:#F8FAFC}
       </div>
     </div>
 
+    <div class="card">
+      <div class="section-titre">🎓 Inscrire un nouvel élève</div>
+      <div id="msgInscription" style="font-size:0.82em;margin-bottom:8px"></div>
+      <select id="inscClasse"><option value="">— Choisir la classe —</option></select>
+      <input type="text" id="inscMatricule" placeholder="Matricule">
+      <input type="text" id="inscNom" placeholder="Nom et prénoms">
+      <input type="text" id="inscMontantDu" placeholder="Montant dû (F CFA)">
+      <input type="tel" id="inscTel1" placeholder="Téléphone Père">
+      <input type="tel" id="inscTel2" placeholder="Téléphone Mère">
+      <input type="tel" id="inscTel3" placeholder="Téléphone Tuteur (optionnel)">
+      <button onclick="inscrireEleveWeb()" id="btnInscrire" style="width:100%">Inscrire l'élève</button>
+    </div>
+
     <button onclick="deconnecterDirecteur()" style="background:#888;width:100%">Se déconnecter</button>
   </div>
 
@@ -110,6 +123,8 @@ tr:nth-child(even){background:#F8FAFC}
 <div class="footer">Collège Privé Guélanin Prince de Zéo — Espace Direction<br>Propulsé par Princes Smart School</div>
 
 <script>
+const APPS_SCRIPT_URL = 'COLLE_ICI_L_URL_DE_DEPLOIEMENT_WEB_APP'; // voir instructions
+
 const CONFIG = {
   SHEETS_ID: '1tGjTGhmcQ0I9Vb5_eFGUTIzcsUk_giDL8iMu7J5Oh2o',
   API_KEY: 'AIzaSyBaDldTi4GWHL3RpnppDKb7dRmaFNd_WSA'
@@ -185,6 +200,74 @@ async function chargerEspaceDirection(){
   renderRecherche(TOUS_ELEVES);
   remplirFiltreClasse();
   renderResultats(TOUS_ELEVES);
+  chargerClassesInscription();
+}
+
+function appelJSONP(url, params, timeoutMs){
+  return new Promise(resolve=>{
+    const cbName='jp_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    const script=document.createElement('script');
+    const qs=new URLSearchParams(Object.assign({callback:cbName}, params));
+    window[cbName]=res=>{delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve(res);};
+    script.onerror=()=>{delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve({succes:false,message:'Erreur reseau'});};
+    script.src=url+'?'+qs.toString();
+    document.body.appendChild(script);
+    setTimeout(()=>{if(window[cbName]){delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve({succes:false,message:'Délai dépassé'});}},timeoutMs||10000);
+  });
+}
+
+async function chargerClassesInscription(){
+  const sel = document.getElementById('inscClasse');
+  if(!sel || sel.options.length > 1) return; // deja charge
+  const result = await appelJSONP(APPS_SCRIPT_URL, {action:'listerClasses'});
+  if(result && result.succes && result.classes){
+    result.classes.forEach(c=>{
+      const o = document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+    });
+  }
+}
+
+async function inscrireEleveWeb(){
+  const msg = document.getElementById('msgInscription');
+  const btn = document.getElementById('btnInscrire');
+  const classe = document.getElementById('inscClasse').value;
+  const matricule = document.getElementById('inscMatricule').value.trim();
+  const nom = document.getElementById('inscNom').value.trim();
+  const montantDu = document.getElementById('inscMontantDu').value.trim();
+  const tel1 = document.getElementById('inscTel1').value.trim();
+  const tel2 = document.getElementById('inscTel2').value.trim();
+  const tel3 = document.getElementById('inscTel3').value.trim();
+
+  if(!classe || !matricule || !nom){
+    msg.style.color='#C62828'; msg.textContent='Merci de remplir au moins la classe, le matricule et le nom.';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Inscription en cours...';
+  msg.textContent = '';
+
+  const result = await appelJSONP(APPS_SCRIPT_URL, {
+    action: 'inscrireNouvelEleveWeb', classe, matricule, nom, montantDu: montantDu||'0', tel1, tel2, tel3
+  });
+
+  btn.disabled = false; btn.textContent = "Inscrire l'élève";
+
+  if(result && result.succes){
+    msg.style.color = '#2E7D32';
+    msg.textContent = '✅ ' + result.message;
+    document.getElementById('inscClasse').value='';
+    document.getElementById('inscMatricule').value='';
+    document.getElementById('inscNom').value='';
+    document.getElementById('inscMontantDu').value='';
+    document.getElementById('inscTel1').value='';
+    document.getElementById('inscTel2').value='';
+    document.getElementById('inscTel3').value='';
+    // Recharger les donnees pour que le nouvel eleve apparaisse tout de suite
+    await chargerEspaceDirection();
+  } else {
+    msg.style.color = '#C62828';
+    msg.textContent = '❌ ' + (result && result.message || 'Erreur inconnue');
+  }
 }
 
 function calculerStats(){
