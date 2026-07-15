@@ -110,6 +110,17 @@ tr:nth-child(even){background:#F8FAFC}
       </div>
     </div>
 
+    <div class="card">
+      <div class="section-titre">📋 Listes par niveau</div>
+      <select id="niveauSelect" onchange="afficherListeNiveau()"><option value="">— Choisir une classe —</option></select>
+      <div class="tbl-wrap">
+        <table id="tableNiveau">
+          <thead><tr><th>Matricule</th><th>Nom</th><th>Dû</th><th>Versé</th><th>Solde</th><th>Statut</th></tr></thead>
+          <tbody id="bodyNiveau"></tbody>
+        </table>
+      </div>
+    </div>
+
     <button onclick="deconnecterComptable()" style="background:#888;width:100%">Se déconnecter</button>
   </div>
 
@@ -193,6 +204,7 @@ async function chargerEspaceDirection(){
 
   calculerStats();
   renderRecherche(TOUS_ELEVES);
+  remplirNiveauSelect();
   // Sections Resultats/Inscription retirees pour l'espace Comptable
 }
 
@@ -243,6 +255,26 @@ async function enregistrerPaiementWeb(){
     msg.style.color = '#C62828';
     msg.textContent = '❌ ' + (result && result.message || 'Erreur inconnue');
   }
+}
+
+function remplirNiveauSelect(){
+  const sel = document.getElementById('niveauSelect');
+  if(!sel || sel.options.length > 1) return;
+  const classes = [...new Set(TOUS_ELEVES.map(e=>e.classe))].sort();
+  classes.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+}
+
+function afficherListeNiveau(){
+  const classe = document.getElementById('niveauSelect').value;
+  const tbody = document.getElementById('bodyNiveau');
+  if(!classe){ tbody.innerHTML=''; return; }
+  const liste = TOUS_ELEVES.filter(e=>e.classe===classe).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+  tbody.innerHTML = liste.length ? liste.map(e=>
+    '<tr><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td>'+
+    '<td>'+e.du.toLocaleString('fr-FR')+'</td><td>'+e.verse.toLocaleString('fr-FR')+'</td>'+
+    '<td style="'+(e.solde>0?'color:#C62828;font-weight:700':'')+'">'+e.solde.toLocaleString('fr-FR')+'</td>'+
+    '<td>'+badgeStatut(e.statut,e.solde,e.verse)+'</td></tr>'
+  ).join('') : '<tr><td colspan="6" style="text-align:center;padding:14px;color:#999">Aucun élève dans cette classe</td></tr>';
 }
 
 function toggleImpayes(){
