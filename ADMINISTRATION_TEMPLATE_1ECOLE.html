@@ -103,6 +103,44 @@ tr:nth-child(even){background:#F8FAFC}
     </div>
 
     <div class="card">
+      <div class="section-titre">💰 Enregistrer un paiement</div>
+      <div id="msgPaiement" style="font-size:0.82em;margin-bottom:8px"></div>
+      <input type="text" id="paieMatricule" placeholder="Matricule de l'élève">
+      <input type="text" id="paieMontant" placeholder="Montant reçu (F CFA)">
+      <select id="paieSource">
+        <option value="WAVE">Wave</option>
+        <option value="ORANGE">Orange Money</option>
+        <option value="ESPECES">Espèces</option>
+      </select>
+      <input type="text" id="paieReference" placeholder="Référence transaction (optionnel)">
+      <button onclick="enregistrerPaiementWeb()" id="btnPaiement" style="width:100%">Enregistrer le paiement</button>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">
+        <span>📊 Liste des impayés</span>
+        <button onclick="toggleImpayes()" id="btnToggleImpayes" style="width:auto;padding:6px 14px;font-size:0.8em">Afficher</button>
+      </div>
+      <div class="tbl-wrap hidden" id="wrapImpayes">
+        <table>
+          <thead><tr><th>Classe</th><th>Matricule</th><th>Nom</th><th>Solde restant</th><th>Tél.</th></tr></thead>
+          <tbody id="bodyImpayes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-titre">📋 Listes par niveau</div>
+      <select id="niveauSelect" onchange="afficherListeNiveau()"><option value="">— Choisir une classe —</option></select>
+      <div class="tbl-wrap">
+        <table id="tableNiveau">
+          <thead><tr><th>Matricule</th><th>Nom</th><th>Tél. 1</th><th>Tél. 2</th><th>Tél. 3</th></tr></thead>
+          <tbody id="bodyNiveau"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="section-titre">🎓 Inscrire un nouvel élève</div>
       <div id="msgInscription" style="font-size:0.82em;margin-bottom:8px"></div>
       <select id="inscClasse"><option value="">— Choisir la classe —</option></select>
@@ -189,6 +227,8 @@ async function chargerEspaceDirection(){
       nom: String(row[2]||'').trim(),
       du: _pm(row[3]), verse: _pm(row[4]), solde: _pm(row[5]),
       tel1: String(row[6]||'').trim(),
+      tel2: String(row[7]||'').trim(),
+      tel3: String(row[8]||'').trim(),
       statut: String(row[9]||'').trim().toUpperCase(),
       decision: String(row[14]||'').trim().toUpperCase(),
       moy: row[15]!==undefined && row[15]!=='' ? _pm(row[15]) : null,
@@ -200,7 +240,25 @@ async function chargerEspaceDirection(){
   renderRecherche(TOUS_ELEVES);
   remplirFiltreClasse();
   renderResultats(TOUS_ELEVES);
+  remplirNiveauSelect();
   chargerClassesInscription();
+}
+
+function remplirNiveauSelect(){
+  const sel = document.getElementById('niveauSelect');
+  if(!sel || sel.options.length > 1) return;
+  const classes = [...new Set(TOUS_ELEVES.map(e=>e.classe))].sort();
+  classes.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+}
+
+function afficherListeNiveau(){
+  const classe = document.getElementById('niveauSelect').value;
+  const tbody = document.getElementById('bodyNiveau');
+  if(!classe){ tbody.innerHTML=''; return; }
+  const liste = TOUS_ELEVES.filter(e=>e.classe===classe).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+  tbody.innerHTML = liste.length ? liste.map(e=>
+    '<tr><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td><td>'+(e.tel1||'—')+'</td><td>'+(e.tel2||'—')+'</td><td>'+(e.tel3||'—')+'</td></tr>'
+  ).join('') : '<tr><td colspan="5" style="text-align:center;padding:14px;color:#999">Aucun élève dans cette classe</td></tr>';
 }
 
 function appelJSONP(url, params, timeoutMs){
@@ -214,6 +272,60 @@ function appelJSONP(url, params, timeoutMs){
     document.body.appendChild(script);
     setTimeout(()=>{if(window[cbName]){delete window[cbName];try{document.body.removeChild(script);}catch(e){}resolve({succes:false,message:'Délai dépassé'});}},timeoutMs||10000);
   });
+}
+
+async function enregistrerPaiementWeb(){
+  const msg = document.getElementById('msgPaiement');
+  const btn = document.getElementById('btnPaiement');
+  const matricule = document.getElementById('paieMatricule').value.trim();
+  const montant = document.getElementById('paieMontant').value.trim();
+  const source = document.getElementById('paieSource').value;
+  const reference = document.getElementById('paieReference').value.trim();
+
+  if(!matricule || !montant){
+    msg.style.color='#C62828'; msg.textContent='Merci de remplir au moins le matricule et le montant.';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Enregistrement...';
+  msg.textContent = '';
+
+  const result = await appelJSONP(APPS_SCRIPT_URL, {
+    action: 'enregistrerPaiementWeb', matricule, montant, source, reference
+  });
+
+  btn.disabled = false; btn.textContent = 'Enregistrer le paiement';
+
+  if(result && result.succes){
+    msg.style.color = '#2E7D32';
+    msg.textContent = '✅ ' + result.nom + ' — Versé : ' + Number(montant).toLocaleString('fr-FR') +
+      ' F | Solde restant : ' + result.solde.toLocaleString('fr-FR') + ' F (' + result.statut + ')';
+    document.getElementById('paieMatricule').value='';
+    document.getElementById('paieMontant').value='';
+    document.getElementById('paieReference').value='';
+    await chargerEspaceDirection();
+  } else {
+    msg.style.color = '#C62828';
+    msg.textContent = '❌ ' + (result && result.message || 'Erreur inconnue');
+  }
+}
+
+function toggleImpayes(){
+  const wrap = document.getElementById('wrapImpayes');
+  const btn = document.getElementById('btnToggleImpayes');
+  if(wrap.classList.contains('hidden')){
+    const impayes = TOUS_ELEVES.filter(e=>e.solde>0);
+    const tbody = document.getElementById('bodyImpayes');
+    tbody.innerHTML = impayes.length ? impayes.map(e=>
+      '<tr><td>'+e.classe+'</td><td>'+e.matricule+'</td><td><strong>'+e.nom+'</strong></td>'+
+      '<td style="color:#C62828;font-weight:700">'+e.solde.toLocaleString('fr-FR')+' F</td><td>'+e.tel1+'</td></tr>'
+    ).join('') : '<tr><td colspan="5" style="text-align:center;padding:14px;color:#999">Aucun impayé 🎉</td></tr>';
+    wrap.classList.remove('hidden');
+    btn.textContent = 'Masquer';
+  } else {
+    wrap.classList.add('hidden');
+    btn.textContent = 'Afficher';
+  }
 }
 
 async function chargerClassesInscription(){
