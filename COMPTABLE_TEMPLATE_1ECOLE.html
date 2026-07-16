@@ -238,7 +238,7 @@ async function enregistrerPaiementWeb(){
   msg.textContent = '';
 
   const result = await appelJSONP(APPS_SCRIPT_URL, {
-    action: 'enregistrerPaiementWeb', matricule, montant, source, reference
+    action: 'enregistrerPaiementWeb', matricule, montant, source, reference, role: 'Comptable'
   });
 
   btn.disabled = false; btn.textContent = 'Enregistrer le paiement';
