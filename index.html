@@ -236,6 +236,14 @@ function afficherEspaceParent(eleve){
   chargerHistoriquePaiements(eleve.matricule);
 }
 
+function _fmtDate(v){
+  if(typeof v === 'number'){
+    const d = new Date(Math.round((v-25569)*86400*1000));
+    return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear()+' '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
+  }
+  return String(v||'');
+}
+
 async function chargerHistoriquePaiements(matricule){
   try{
     const url = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.SHEETS_ID+'/values/HISTORIQUE_MAJ?key='+CONFIG.API_KEY+'&valueRenderOption=UNFORMATTED_VALUE';
@@ -259,7 +267,7 @@ async function chargerHistoriquePaiements(matricule){
     paiements.reverse(); // plus recent en premier
     const div = document.getElementById('listeHistorique');
     div.innerHTML = paiements.map(p=>
-      '<div class="recu-item"><div><div class="date">'+p.date+'</div><span class="recu-source">'+p.source+'</span></div>'+
+      '<div class="recu-item"><div><div class="date">'+_fmtDate(p.date)+'</div><span class="recu-source">'+p.source+'</span></div>'+
       '<div class="montant">+'+p.montant.toLocaleString('fr-FR')+' F</div></div>'
     ).join('');
     document.getElementById('cardHistorique').style.display = 'block';
