@@ -257,6 +257,14 @@ async function chargerEspaceDirection(){
   chargerClassesInscription();
 }
 
+function _fmtDate(v){
+  if(typeof v === 'number'){
+    const d = new Date(Math.round((v-25569)*86400*1000));
+    return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear()+' '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
+  }
+  return String(v||'');
+}
+
 let HISTORIQUE_GLOBAL_CHARGE = false;
 async function toggleHistoriqueGlobal(){
   const wrap = document.getElementById('wrapHistoriqueGlobal');
@@ -271,7 +279,7 @@ async function toggleHistoriqueGlobal(){
         const rows = (data.values || []).slice(1).reverse().slice(0,50); // 50 plus recents
         const tbody = document.getElementById('bodyHistoriqueGlobal');
         tbody.innerHTML = rows.length ? rows.map(r=>
-          '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td><strong>'+r[2]+'</strong></td><td>'+r[3]+'</td>'+
+          '<tr><td>'+_fmtDate(r[0])+'</td><td>'+r[1]+'</td><td><strong>'+r[2]+'</strong></td><td>'+r[3]+'</td>'+
           '<td style="color:#2E7D32;font-weight:700">+'+_pm(r[4]).toLocaleString('fr-FR')+' F</td><td>'+r[8]+'</td><td style="font-size:0.75em;color:#666">'+(r[10]||'—')+'</td></tr>'
         ).join('') : '<tr><td colspan="7" style="text-align:center;padding:14px;color:#999">Aucun paiement enregistré</td></tr>';
         HISTORIQUE_GLOBAL_CHARGE = true;
