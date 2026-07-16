@@ -250,7 +250,7 @@ async function chargerHistoriquePaiements(matricule){
       const row = rows[i];
       if(String(row[1]||'').trim().toUpperCase() === matNorm){
         paiements.push({
-          date: String(row[0]||''), montant: _pm(row[4]), source: String(row[8]||''), reference: String(row[9]||'')
+          date: String(row[0]||''), montant: _pm(row[4]), source: String(row[8]||''), reference: String(row[9]||''), saisiPar: String(row[10]||'')
         });
       }
     }
